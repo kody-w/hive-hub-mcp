@@ -146,7 +146,8 @@ class TamperTests(HubCase):
                 ({"slug": "../../secret"}, "invalid card"),
                 ({"kind": "plugin"}, "invalid card"),
                 ({"chant": "ember-ember-ember-ember-ember-ember-ember"}, "chant"),
-                ({"sha256": "0" * 63}, "sha256")):
+                ({"sha256": "0" * 63}, "sha256"),
+                ({"path": "../../../../attacker/repo/main/x.md"}, "unexpected card path")):
             with self.subTest(change=change):
                 hub = self.copy_fixture()
                 path = hub / "views/api/v2/index.json"
@@ -157,10 +158,16 @@ class TamperTests(HubCase):
                     mcp.list_cards()
                 self.assertIn(fragment, str(refused.exception))
 
+    def test_urls_come_only_from_checked_values(self) -> None:
+        card = mcp.get_card(CONTOSO)
+        base = FIXTURE.as_uri() + "/"
+        self.assertEqual(card["card_url"], base + "cards/hives/contoso-model-hive.md")
+        self.assertEqual(card["page"], base + "views/site/hives/contoso-model-hive.html")
+
     def test_only_https_and_file_hubs_are_read(self) -> None:
-        with mock.patch.dict(os.environ, {"HIVE_HUBS": "plain=http://hub.example.org/"}):
-            with self.assertRaises(ValueError):
-                mcp.hubs()
+        plain = {"HIVE_HUBS": "plain=http://hub.example.org/"}
+        with mock.patch.dict(os.environ, plain), self.assertRaises(ValueError):
+            mcp.hubs()
         with mock.patch.dict(os.environ, {"HIVE_HUBS": ""}):
             self.assertEqual(mcp.hubs(), mcp.DEFAULT_HUBS)
             self.assertTrue(all(url.startswith("https://") for url in mcp.hubs().values()))
@@ -206,6 +213,50 @@ class ProtocolTests(unittest.TestCase):
         self.assertFalse(replies[3]["result"]["isError"])
         self.assertEqual(replies[4]["error"]["code"], -32602)
         self.assertEqual(replies[5]["result"], {})
+
+
+class RobustnessTests(unittest.TestCase):
+    def run_server(self, lines: list[str], hub: Path = FIXTURE,
+                   encoding: str | None = None) -> subprocess.CompletedProcess[bytes]:
+        env = {**os.environ, **hub_env(hub)}
+        if encoding:
+            env["PYTHONIOENCODING"] = encoding
+        return subprocess.run([sys.executable, "-B", str(SERVER)],
+                              input="".join(line + "\n" for line in lines).encode("ascii"),
+                              capture_output=True, check=False, timeout=60, env=env)
+
+    def test_malformed_requests_get_errors_and_the_server_keeps_serving(self) -> None:
+        result = self.run_server([
+            '[{"jsonrpc": "2.0", "id": 1, "method": "ping"}]',
+            '{"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": [1]}',
+            '{"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": []}}',
+            '{"jsonrpc": "2.0", "id": 4, "method": "tools/call",'
+            ' "params": {"name": "list_cards", "arguments": [1]}}',
+            "not json",
+            '{"jsonrpc": "2.0", "id": 5, "method": "ping"}',
+        ])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        replies = [json.loads(line) for line in result.stdout.decode("ascii").splitlines()]
+        self.assertEqual([reply.get("error", {}).get("code") for reply in replies],
+                         [-32600, -32602, -32602, -32602, -32700, None])
+        self.assertEqual(replies[-1], {"jsonrpc": "2.0", "id": 5, "result": {}})
+
+    def test_output_is_ascii_even_for_odd_text_and_legacy_consoles(self) -> None:
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        hub = Path(folder.name) / "hub"
+        shutil.copytree(FIXTURE, hub)
+        path = hub / "views/api/v2/index.json"
+        index = json.loads(path.read_text("utf-8"))
+        index["cards"][0]["name"] = "Arrow \u2192, accent \u00e9, lone \ud800"
+        path.write_text(json.dumps(index), encoding="utf-8")
+        result = self.run_server(['{"jsonrpc": "2.0", "id": 1, "method": "tools/call",'
+                                  ' "params": {"name": "list_cards"}}'], hub, "cp1252")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        text = result.stdout.decode("ascii")
+        reply = json.loads(text)
+        cards = json.loads(reply["result"]["content"][0]["text"])["cards"]
+        self.assertEqual(cards[0]["name"], "Arrow \u2192, accent \u00e9, lone \ud800")
 
 
 if __name__ == "__main__":

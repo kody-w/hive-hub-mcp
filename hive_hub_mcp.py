@@ -128,6 +128,10 @@ def entries(hub: str) -> list[Json]:
             raise ValueError(f"{hub}: {kind}/{slug} has no valid sha256 in the index")
         if entry.get("chant") != chant(bytes.fromhex(entry["sha256"])):
             raise ValueError(f"{hub}: {kind}/{slug} has a chant that does not match its sha256")
+        folders = "" if kind == "protocol" else r"(?:[a-z0-9]+(?:-[a-z0-9]+)*/)*"
+        path = re.compile(rf"cards/{KINDS[kind]}/{folders}{re.escape(slug)}\.md\Z")
+        if not isinstance(entry.get("path"), str) or not path.fullmatch(entry["path"]):
+            raise ValueError(f"{hub}: {kind}/{slug} has an unexpected card path in the index")
         checked.append(entry)
     return checked
 
@@ -225,9 +229,10 @@ def search_cards(query: str, hub: str | None = None) -> Json:
 def get_card(slug: str, kind: str | None = None, hub: str | None = None) -> Json:
     h, entry = find(slug, kind, hub)
     card = verified_card(h, entry)
+    page = f"views/site/{KINDS[entry['kind']]}/{entry['slug']}.html"
     result = {**row(h, entry), "verified": True, "frontmatter": card["frontmatter"],
-              "body": card["body"], "card_url": hubs()[h] + entry.get("path", ""),
-              "page": hubs()[h] + "views/" + entry.get("page", "")}
+              "body": card["body"], "card_url": hubs()[h] + entry["path"],
+              "page": hubs()[h] + page}
     if entry["kind"] == "hive":
         result["join"] = join_steps(h, card["frontmatter"])
     if entry["kind"] == "starter":
@@ -295,14 +300,23 @@ INSTRUCTIONS = (
 # ------------------------------------------------------------------------------ MCP over stdio
 
 def send(message: Json) -> None:
-    sys.stdout.write(json.dumps(message, ensure_ascii=False) + "\n")
+    sys.stdout.write(json.dumps(message) + "\n")
     sys.stdout.flush()
 
 
-def handle(message: Json) -> None:
-    mid, method, params = message.get("id"), message.get("method"), message.get("params") or {}
+def send_error(mid: Any, code: int, text: str) -> None:
+    send({"jsonrpc": "2.0", "id": mid, "error": {"code": code, "message": text}})
+
+
+def handle(message: Any) -> None:
+    if not isinstance(message, dict):
+        return send_error(None, -32600, "Invalid Request: send one JSON-RPC object per line")
+    mid, method, params = message.get("id"), message.get("method"), message.get("params")
     if mid is None:
         return
+    params = {} if params is None else params
+    if not isinstance(params, dict):
+        return send_error(mid, -32602, "params must be an object")
     result: Json
     if method == "initialize":
         result = {"protocolVersion": params.get("protocolVersion") or "2025-06-18",
@@ -317,19 +331,19 @@ def handle(message: Json) -> None:
                                              "required": required}}
                             for name, (_, description, properties, required) in TOOLS.items()]}
     elif method == "tools/call":
-        name = params.get("name")
-        if name not in TOOLS:
-            return send({"jsonrpc": "2.0", "id": mid,
-                         "error": {"code": -32602, "message": f"Unknown tool: {name}"}})
+        name, arguments = params.get("name"), params.get("arguments") or {}
+        if not isinstance(name, str) or name not in TOOLS:
+            return send_error(mid, -32602, f"Unknown tool: {name!r}")
+        if not isinstance(arguments, dict):
+            return send_error(mid, -32602, "arguments must be an object")
         try:
-            output, failed = TOOLS[name][0](**(params.get("arguments") or {})), False
+            output, failed = TOOLS[name][0](**arguments), False
         except Exception as error:  # report to the model and keep serving
             output, failed = {"error": f"{type(error).__name__}: {error}"}, True
-        result = {"content": [{"type": "text", "text": json.dumps(output, ensure_ascii=False)}],
+        result = {"content": [{"type": "text", "text": json.dumps(output)}],
                   "isError": failed}
     else:
-        return send({"jsonrpc": "2.0", "id": mid,
-                     "error": {"code": -32601, "message": f"Method not found: {method}"}})
+        return send_error(mid, -32601, f"Method not found: {method!r}")
     send({"jsonrpc": "2.0", "id": mid, "result": result})
 
 
@@ -339,7 +353,7 @@ def main(argv: list[str]) -> int:
         return 0
     if argv[:1] == ["--call"] and len(argv) in (2, 3) and argv[1] in TOOLS:
         arguments = json.loads(argv[2]) if len(argv) == 3 else {}
-        print(json.dumps(TOOLS[argv[1]][0](**arguments), ensure_ascii=False, indent=2))
+        print(json.dumps(TOOLS[argv[1]][0](**arguments), indent=2))
         return 0
     for line in sys.stdin:
         if not line.strip():
@@ -347,10 +361,13 @@ def main(argv: list[str]) -> int:
         try:
             message = json.loads(line)
         except ValueError:
-            send({"jsonrpc": "2.0", "id": None,
-                  "error": {"code": -32700, "message": "Parse error"}})
+            send_error(None, -32700, "Parse error")
             continue
-        handle(message)
+        try:
+            handle(message)
+        except Exception as failure:  # never let one bad request stop the server
+            mid = message.get("id") if isinstance(message, dict) else None
+            send_error(mid, -32603, f"Internal error: {type(failure).__name__}")
     return 0
 
 
