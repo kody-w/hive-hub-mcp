@@ -1,0 +1,59 @@
+{
+  "api": "hub/v2",
+  "hub": {
+    "title": "Hive Hub",
+    "path": "HUB.md",
+    "sha256": "dccaca8d13daa9abe175911164383576218d064d839549421e04efb81b5fa297"
+  },
+  "cards": [
+    {
+      "kind": "protocol",
+      "slug": "hive-md",
+      "name": "Hive folder convention (HIVE-MD)",
+      "status": "experimental",
+      "protocol": "hive-md",
+      "chant": "birch-juniper-harbor-oxbow-larch-elm-jasper",
+      "sha256": "c69d0ed338b1ce826c8723d69e083e87378d78215869b3f7d9bdc433b2c4cafd",
+      "path": "cards/protocols/hive-md.md",
+      "json": "api/v2/protocols/hive-md.json",
+      "page": "site/protocols/hive-md.html"
+    },
+    {
+      "kind": "protocol",
+      "slug": "rapp-hive/1",
+      "name": "RAPP Private Hive",
+      "status": "in force",
+      "protocol": "rapp-hive/1",
+      "chant": "quay-ursa-gorse-bluff-yield-birch-north",
+      "sha256": "ef593360f7c6ba57ba771af110234791616c6a51a11b51a656d64206ce849bad",
+      "path": "cards/protocols/rapp-hive/1.md",
+      "json": "api/v2/protocols/rapp-hive/1.json",
+      "page": "site/protocols/rapp-hive/1.html"
+    },
+    {
+      "kind": "protocol",
+      "slug": "rapp-hive/2",
+      "name": "RAPP Hive 2 (frozen research record)",
+      "status": "frozen",
+      "protocol": "rapp-hive/2",
+      "chant": "tarn-zephyr-vetch-aspen-willow-cinder-larch",
+      "sha256": "a7ac42940a89382303ba7eff9a53ca1d14933aef242807ad11d79f9148208444",
+      "path": "cards/protocols/rapp-hive/2.md",
+      "json": "api/v2/protocols/rapp-hive/2.json",
+      "page": "site/protocols/rapp-hive/2.html"
+    },
+    {
+      "kind": "hive",
+      "slug": "contoso-model-hive",
+      "name": "Contoso Onboarding (model Hive)",
+      "status": "experimental",
+      "protocol": "hive-md",
+      "chant": "pine-cobalt-crag-ledge-knoll-willow-anvil",
+      "sha256": "bc9661501e8a5f6caefa2d3f1d0dc69411a8cd474c0f56b981359205f13c069c",
+      "path": "cards/hives/contoso-model-hive.md",
+      "json": "api/v2/hives/contoso-model-hive.json",
+      "page": "site/hives/contoso-model-hive.html"
+    }
+  ],
+  "collisions": []
+}

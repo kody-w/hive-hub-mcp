@@ -1,0 +1,16 @@
+{
+  "kind": "protocol",
+  "slug": "rapp-hive/2",
+  "path": "cards/protocols/rapp-hive/2.md",
+  "sha256": "a7ac42940a89382303ba7eff9a53ca1d14933aef242807ad11d79f9148208444",
+  "chant": "tarn-zephyr-vetch-aspen-willow-cinder-larch",
+  "frontmatter": {
+    "card": "protocol",
+    "id": "rapp-hive/2",
+    "name": "RAPP Hive 2 (frozen research record)",
+    "status": "frozen",
+    "spec": "https://github.com/kody-w/rapp-workspace/blob/b0d0f07ed91a465d9922fc50ce9fd6d01f736081/protocols/rapp-hive/2/FROZEN.md",
+    "spec_sha256": "2251ffd1d34d871a0337ef4343d7d32ca7ea8ca84303396cd3913c8c9e250e77"
+  },
+  "body": "Frozen on 2026-09-23 as a research record. Never activate it, and start or join no Hive with it.\nIt worked but was too much to run, and real data did not fit. The Hive folder convention (`hive-\nmd`) replaced it as the experiment, and `rapp-hive/1` stays in force. The spec above is its\n`FROZEN.md` note; the rest of the draft is kept byte for byte beside it.\n"
+}

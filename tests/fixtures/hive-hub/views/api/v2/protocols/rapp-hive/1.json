@@ -1,0 +1,18 @@
+{
+  "kind": "protocol",
+  "slug": "rapp-hive/1",
+  "path": "cards/protocols/rapp-hive/1.md",
+  "sha256": "ef593360f7c6ba57ba771af110234791616c6a51a11b51a656d64206ce849bad",
+  "chant": "quay-ursa-gorse-bluff-yield-birch-north",
+  "frontmatter": {
+    "card": "protocol",
+    "id": "rapp-hive/1",
+    "name": "RAPP Private Hive",
+    "status": "in force",
+    "spec": "https://github.com/kody-w/rapp-work/blob/29ead23b21645f8d7682ee00414930ffa9ce0ca6/protocols/rapp-hive/1/SPEC.md",
+    "spec_sha256": "79aeef7bc5000f4a7b09483844b035c66adf817475540e583138f2e6b432c822",
+    "checker": "python3 .github/skills/rapp-private-hive/scripts/deploy_hive.py client verify --client-dir <client>",
+    "checker_sha256": "7cd7ac696cc2273b6361be0732e69ddf040f40a55a7f5c41416cbaf6cf85c8ba"
+  },
+  "body": "The Private Hive profile in force: one owner, signed RAPP/1 frames, and channels such as a\nprivate Git repository that carry one authority. The checker comes from the same commit as the\nspec: an independent client runs `client init` with the owner's anchor, then `client pull`, then\n`client verify`. No Brainstem agent is pinned here, because nobody joins a `rapp-hive/1` Hive by\nrequest: the owner's signed declaration names its members, and that roster cannot change yet\n(gap G1).\n"
+}
