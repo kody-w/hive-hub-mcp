@@ -1,5 +1,9 @@
 # hive-hub-mcp
 
+<!-- rapp1:network-header:start -->
+[![RAPP/1](https://kody-w.github.io/rapp-hive-public/portfolio/badges/hive-hub-mcp.svg)](https://github.com/kody-w/rapp-hive-public/blob/main/portfolio/repos/hive-hub-mcp.md) · **New to RAPP?** [Start here: get your Brainstem →](https://github.com/kody-w/rapp-installer#start-here)
+<!-- rapp1:network-header:end -->
+
 A read-only MCP server for the public Hive Hubs. It lets any AI app browse organization seeds, resolve a
 seven-word chant, and pull down a seed's archive with its SHA-256 checked. One file, Python 3.9+ standard
 library, no dependencies.
